@@ -1,9 +1,9 @@
 import {Body, Controller, Get, Post, Req, UseGuards} from '@nestjs/common';
-import {AuthPayloadDto} from "./dto/auth.dto";
 import {AuthService} from "./auth.service";
 import {LocalGuard} from "./guards/local.guard";
 import {Request} from "express";
 import {JwtAuthGuard} from "./guards/jwt.guard";
+import {Prisma} from "@prisma/client";
 
 @Controller('auth')
 export class AuthController {
@@ -15,11 +15,13 @@ export class AuthController {
         return req.user
     }
 
+
+    @Post('signup')
+    async signup(@Body() body : Prisma.UsersCreateInput){
+        return this.authService.createUser(body)
+    }
+
     @Get('status')
     @UseGuards(JwtAuthGuard)
-    async status(@Req() req : Request){
-        console.log("Inside auth controller")
-        console.log(req.user)
-
-    }
+    async status(@Req() req : Request){}
 }
