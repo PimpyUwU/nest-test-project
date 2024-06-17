@@ -1,4 +1,4 @@
-import {BadRequestException, Injectable, UnauthorizedException} from '@nestjs/common';
+import {BadRequestException, Injectable} from '@nestjs/common';
 import {AuthPayloadDto} from "./dto/auth.dto";
 import {JwtService} from "@nestjs/jwt";
 import {DatabaseService} from "../database/database.service";
@@ -18,14 +18,13 @@ export class AuthService {
             })
 
             if(!foundUser){
-                throw new UnauthorizedException()
+                return null
             }
 
             if(await bcrypt.compare(authPayload.password, foundUser.password)){
-                const {password, name, ...user} = foundUser
-                return this.jwtService.sign(user)
+                return this.signToken(foundUser)
             }
-            else throw new UnauthorizedException()
+            else return null
         });
     }
 
@@ -40,14 +39,27 @@ export class AuthService {
             if (user) {
                 throw new BadRequestException("email is taken")
             } else {
-                const salt = await bcrypt.genSalt()
-                return t.users.create({data: {
+                const createdUser = await t.users.create({data: {
                         email : registrationPayload.email,
                         name : registrationPayload.name,
-                        password : await bcrypt.hash(registrationPayload.password, salt)
+                        password : await this.hashPassword(registrationPayload.password)
                     }
                 });
+
+                return this.signToken(createdUser)
             }
         });
+    }
+
+    private async signToken(userData : Prisma.UsersCreateInput){
+        const {password, Posts, ...user} = userData
+
+        return this.jwtService.sign(user)
+    }
+
+    private async hashPassword(password : string){
+        const salt = await bcrypt.genSalt()
+
+        return bcrypt.hash(password, salt)
     }
 }
