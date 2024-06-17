@@ -1,4 +1,4 @@
-import {BadRequestException, Injectable} from '@nestjs/common';
+import {BadRequestException, Injectable, UnauthorizedException} from '@nestjs/common';
 import {AuthPayloadDto} from "./dto/auth.dto";
 import {JwtService} from "@nestjs/jwt";
 import {DatabaseService} from "../database/database.service";
@@ -10,17 +10,23 @@ export class AuthService {
     constructor(private jwtService : JwtService, private databaseService : DatabaseService) {}
 
     async validateUser(authPayload : AuthPayloadDto){
-        const foundUser = await this.databaseService.users.findUnique({
-            where : {
-               email : authPayload.email
-            }
-        })
+        return this.databaseService.$transaction(async (t) => {
+            const foundUser = await t.users.findUnique({
+                where : {
+                    email : authPayload.email
+                }
+            })
 
-        if(await bcrypt.compare(authPayload.password, foundUser.password)){
-            const {password, name, ...user} = foundUser
-            return this.jwtService.sign(user)
-        }
-        else return null
+            if(!foundUser){
+                throw new UnauthorizedException()
+            }
+
+            if(await bcrypt.compare(authPayload.password, foundUser.password)){
+                const {password, name, ...user} = foundUser
+                return this.jwtService.sign(user)
+            }
+            else throw new UnauthorizedException()
+        });
     }
 
     async createUser(registrationPayload : Prisma.UsersCreateInput){
