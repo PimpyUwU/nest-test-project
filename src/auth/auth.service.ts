@@ -51,7 +51,7 @@ export class AuthService {
         });
     }
 
-    private async signToken(userData : Prisma.UsersCreateInput){
+    async signToken(userData : Prisma.UsersCreateInput){
         const {password, Posts, ...user} = userData
 
         return this.jwtService.sign(user)

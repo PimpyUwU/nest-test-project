@@ -29,11 +29,13 @@ export class AuthController {
 
     @Get('status')
     @UseGuards(JwtAuthGuard)
-    async status(@Req() req : Request){}
+    async status(@Req() req : Request){
+        return req.user
+    }
 
     private async setJWTCookie(token : string, res : Response){
         res.cookie('jwt', token, {
-            expires: new Date(new Date().getTime() + 30 * 1000),
+            expires: new Date(new Date().getTime() + 60 * 60 * 1000),
             httpOnly: true,
         })
     }
